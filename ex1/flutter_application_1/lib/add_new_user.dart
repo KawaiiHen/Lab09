@@ -32,6 +32,8 @@ class _AddUserScreen extends State<AddUserScreen> {
       'blocked': false,
     };
 
+    print("User image URL: ${newUser['img']}"); // Log image URL for verification
+
     // Send the data to the server.
     final response = await http.post(
       Uri.parse('http://localhost:3000/users'),

@@ -21,8 +21,9 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   List<Map<String, dynamic>> users = [];
   bool isLoading = true;
-  Map<String, dynamic>? deletedUser; // Variable to hold the deleted user
+  Map<String, dynamic>? deletedUser;
   String? deletedUserId;
+
   Future<void> fetchUsers() async {
     try {
       final response = await http.get(Uri.parse('http://localhost:3000/users'));
@@ -58,19 +59,17 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> deleteUser(String id) async {
-    final userToDelete = users.firstWhere(
-        (user) => user['id'] == id); // Get user data before deletion
+    final userToDelete = users.firstWhere((user) => user['id'] == id);
 
-    final response =
-        await http.delete(Uri.parse('http://localhost:3000/users/$id'));
+    final response = await http.delete(Uri.parse('http://localhost:3000/users/$id'));
 
     if (response.statusCode == 200) {
       setState(() {
         users.removeWhere((user) => user['id'] == id);
-        deletedUser = userToDelete; // Store the deleted user data
-        deletedUserId = id; // Store the ID of the deleted user
+        deletedUser = userToDelete;
+        deletedUserId = id;
       });
-      _showUndoSnackbar(); // Show Snackbar for undo action
+      _showUndoSnackbar();
     } else {
       print('Failed to delete user with id: $id');
     }
@@ -83,7 +82,7 @@ class _MyAppState extends State<MyApp> {
         label: 'Undo',
         onPressed: () {
           if (deletedUser != null) {
-            _restoreUser(deletedUser!); // Restore the deleted user
+            _restoreUser(deletedUser!);
           }
         },
       ),
@@ -96,14 +95,14 @@ class _MyAppState extends State<MyApp> {
     final response = await http.post(
       Uri.parse('http://localhost:3000/users'),
       headers: {'Content-Type': 'application/json'},
-      body: json.encode(user), // Use the deleted user's data
+      body: json.encode(user),
     );
 
     if (response.statusCode == 201) {
       setState(() {
         users.add(json.decode(response.body));
-        deletedUser = null; // Clear deleted user data after restoration
-        deletedUserId = null; // Clear deleted user ID after restoration
+        deletedUser = null;
+        deletedUserId = null;
       });
     } else {
       print('Failed to restore user');
@@ -130,7 +129,7 @@ class _MyAppState extends State<MyApp> {
     );
 
     if (deleteConfirmed == true) {
-      await deleteUser(id); // Call delete user function
+      await deleteUser(id);
     }
   }
 
@@ -142,6 +141,7 @@ class _MyAppState extends State<MyApp> {
       leading: CircleAvatar(
         radius: 32,
         backgroundImage: CachedNetworkImageProvider(user['img']),
+        onBackgroundImageError: (_, __) => print('Failed to load image at ${user['img']}'), // Error handler
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -156,9 +156,7 @@ class _MyAppState extends State<MyApp> {
               PopupMenuItem(
                 padding: EdgeInsets.zero,
                 child: ListTile(
-                  title: Text(user['favorited']
-                      ? 'Remove from favorites'
-                      : 'Add to favorites'),
+                  title: Text(user['favorited'] ? 'Remove from favorites' : 'Add to favorites'),
                   leading: const Icon(Icons.favorite),
                   onTap: () {
                     Navigator.pop(context);
@@ -171,9 +169,7 @@ class _MyAppState extends State<MyApp> {
               PopupMenuItem(
                 padding: EdgeInsets.zero,
                 child: ListTile(
-                  title: Text(user['blocked']
-                      ? 'Unblock this user'
-                      : 'Block this user'),
+                  title: Text(user['blocked'] ? 'Unblock user' : 'Block user'),
                   leading: const Icon(Icons.block),
                   onTap: () {
                     Navigator.pop(context);
@@ -186,32 +182,20 @@ class _MyAppState extends State<MyApp> {
               PopupMenuItem(
                 padding: EdgeInsets.zero,
                 child: ListTile(
-                  title: const Text('Delete this user'),
+                  title: const Text('Delete User'),
                   leading: const Icon(Icons.delete),
-                  onTap: () {
+                  onTap: () async {
                     Navigator.pop(context);
-                    confirmDeleteUser(context, user['id']);
+                    await confirmDeleteUser(context, user['id']);
                   },
                 ),
               ),
             ],
-          )
+          ),
         ],
       ),
       title: Text(user['fullName']),
       subtitle: Text(user['jobTitle']),
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("You've clicked on ${user['fullName']}"),
-            action: SnackBarAction(
-              label: 'Dismiss',
-              onPressed: () => {},
-              textColor: Colors.amber,
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -219,17 +203,19 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('User Management App'),
+        title: const Text('User List'),
         actions: [
-          IconButton(onPressed: _addNewUser, icon: const Icon(Icons.add))
+          IconButton(
+            onPressed: _addNewUser,
+            icon: const Icon(Icons.add),
+          ),
         ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.separated(
-              itemBuilder: _userToListItem,
-              separatorBuilder: (ct, idx) => const Divider(height: 1),
+          : ListView.builder(
               itemCount: users.length,
+              itemBuilder: _userToListItem,
             ),
     );
   }
